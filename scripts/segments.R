@@ -1,6 +1,5 @@
 library(data.table)
 library(splitstackshape)
-help(package='splitstackshape')
 library(diverdt)
 
 seg_l <- 
@@ -21,17 +20,17 @@ eur_dt <- load_bim_frq('../data/reich_data/EUR/EUR',
                        one_allele_perline = FALSE)
 
 recomb_data <- 
-  fread('../data/genetic_map_b36/genetic_map_chr1_combined_b37.txt')
+  fread('../data/genetic_map_b36/genetic_map_chr1_b36.txt')
 names(recomb_data) <- c('POS', 'RATE', 'CM_R')
 
 recomb_data
 
 eur_dt[CHR == 1, WD_ID := wd_dt$WD_ID]
-eur_dt1 <- eur_dt[CHR == 1]
 
+eur_dt1 <- eur_dt[CHR == 1]
 eur_dt1[, HTZ := MAF * ( 1 - MAF)]
 
 reur1 <- recomb_data[eur_dt1, on = .(POS)]
 reur1[!is.na(RATE)]
 
-eur_dt1[, mean(HTZ), by = WD_ID]
+eur_dt1[, .(HTZ_WD = mean(HTZ)), by = WD_ID]

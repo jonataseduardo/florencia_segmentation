@@ -3,17 +3,40 @@ library(splitstackshape)
 library(diverdt)
 library(ggplot)
 
-seg_l <- 
-  unlist(
-    lapply(
-      readLines('../data/segments/EUR/chro1.segs'),
-      function(line_) lapply(strsplit(line_, " "), as.integer)
-      )
-    )
+files_path <- 
+  '../data/Results-01-phased-filtered'
 
-# Using plus one since R vectors start in one
-# Ask Florencia why her index array starts in 0
-seg_dt <- data.table(CHR = 1, WD_ID = seg_l + 1) 
+files_list <- 
+  grep('1e', 
+       list.files(files_path, full.names=TRUE), 
+       value = TRUE)
+files_list
+
+fp_re <- 
+  paste0("^(", 
+         files_path, 
+         ")(/EUR1-1e-)", 
+         "([0-9]{2})$")
+
+f_sufix <- 
+  gsub(fp_re, "\\1\\2", files_list[[1]])
+
+exponents <- 
+  gsub(fp_re, "\\3", files_list)
+
+seg_dt <-
+  rbindlist(
+    lapply(exponents, 
+           function(e) fread(paste0(f_sufix, e))[,EXP := e]
+           ))
+
+setnames(seg_dt, 
+         paste0("V", 1:4), 
+         c("IL", "IR", "WD_SIZE", "AVG_HOM"))
+
+
+
+
 seg_dt[, NREP := shift(WD_ID, type='lead') -  WD_ID]
 wd_dt <- expandRows(seg_dt[!is.na(NREP)], 'NREP')
 
@@ -29,6 +52,7 @@ eur_dt1 <- eur_dt[CHR == 1]
 eur_dt1[, `:=`(POS_ID = .I, 
                WD_ID = wd_dt$WD_ID,
                HTZ = MAF * ( 1 - MAF))]
+
 eur_dt1[, HTZ_WD := mean(HTZ), by = WD_ID]
 
 reur1 <- recomb_data[eur_dt1, on = .(POS)

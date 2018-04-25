@@ -3,6 +3,8 @@ library(splitstackshape)
 library(diverdt)
 library(ggplot2)
 
+
+## Reading Florencia data
 files_path <- 
   '../data/Results-01-phased-filtered'
 
@@ -40,6 +42,7 @@ eur_segs_ref <-
         select = 1:3,
         col.names = c("CHR", "POS", "SNP"))
 
+## Reading Freq and recombination data
 eur_dt <- 
   load_bim_frq('../data/reich_data/EUR/EUR', 
                one_allele_perline = FALSE)
@@ -63,7 +66,6 @@ recomb_data <-
   fread('../data/genetic_map_b36/genetic_map_chr1_b36.txt',
         col.names = c('POS', 'RATE', 'CM_R'))
 
-
 reur <- recomb_data[eur_wd, on = .(POS)
                     ][!is.na(RATE)]
 
@@ -71,29 +73,55 @@ reur[,`:=`(WD_AVG_RATE = mean(RATE),
             WD_SD_RATE = sd(RATE)),
       by = .(EXP, IR)]
 
+
+## Windows border statistics
+
 reur[POS_ID == IL | POS_ID == IR , 
      .(mean(RATE), var(RATE)), 
      by = EXP]
 
 reur[, .(mean(RATE), var(RATE)), by = EXP]
 
+reur[, .N, by = .(IR, EXP)][, .N, by = EXP]
 
 
 
+## Plot
+p_reur <- reur[POS_ID %in% 1200:1500][EXP %in% c('05', '10', '15')]
+segs_p <- unique(p_reur[, .(IR, IL, WD_AVG_RATE, WD_SD_RATE, EXP)])
 
-
-p_reur <- reur[POS_ID %in% 1200:1500]
-segs_p <- unique(p_reur[EXP %in% c('01', '05', '10', '15'), 
-                 .(IR, IL, WD_AVG_RATE, WD_SD_RATE, EXP)])
-ggplot(p_reur[EXP == '01']) + 
-  geom_line(aes(x=POS_ID, y = RATE)) + 
+{
+ggplot(p_reur[EXP == '05']) + 
+  geom_line(aes(x=POS_ID, y = RATE), size = 1.2) + 
   theme_bw() + 
   scale_color_brewer(palette = 'Set1') + 
-  geom_segment(data = segs_p,
+  geom_segment(data = segs_p[!is.na(WD_SD_RATE)],
                aes(x = IL, xend = IR, 
                    y = WD_AVG_RATE, yend = WD_AVG_RATE, 
                    size = WD_SD_RATE,
                    color = EXP 
                    ),
                alpha = 0.7
+            ) + 
+  geom_segment(data = p_reur[POS_ID == IL & !is.na(WD_SD_RATE)],
+               aes(x = IL, xend = IL, 
+                   y = WD_AVG_RATE, yend = RATE, 
+                   color = EXP 
+                   ),
+               lineend = 'round',
+               linetype = 'dotted',
+               size = 0.8,
+               alpha = 0.7
+            ) + 
+  geom_segment(data = p_reur[POS_ID == IR & !is.na(WD_SD_RATE)],
+               aes(x = IR, xend = IR, 
+                   y = WD_AVG_RATE, yend = RATE, 
+                   color = EXP 
+                   ),
+               lineend = 'round',
+               linetype = 'dotted',
+               size = 0.8,
+               alpha = 0.7
             )
+
+}

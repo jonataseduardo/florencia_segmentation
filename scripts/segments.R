@@ -63,6 +63,7 @@ recomb_data <-
   fread('../data/genetic_map_b36/genetic_map_chr1_b36.txt',
         col.names = c('POS', 'RATE', 'CM_R'))
 
+
 reur <- recomb_data[eur_wd, on = .(POS)
                     ][!is.na(RATE)]
 
@@ -74,19 +75,20 @@ reur[POS_ID == IL | POS_ID == IR ,
      .(mean(RATE), var(RATE)), 
      by = EXP]
 
-recomb_data[, .(mean(RATE), var(RATE))]
+reur[, .(mean(RATE), var(RATE)), by = EXP]
 
-seg_dt[EXP == '15']
 
-recomb_data[, POS_ID := .I]
 
-p_reur <- reur[POS_ID %in% 1000:1500]
+
+
+
+p_reur <- reur[POS_ID %in% 1200:1500]
 segs_p <- unique(p_reur[EXP %in% c('01', '05', '10', '15'), 
                  .(IR, IL, WD_AVG_RATE, WD_SD_RATE, EXP)])
-segs_p
 ggplot(p_reur[EXP == '01']) + 
   geom_line(aes(x=POS_ID, y = RATE)) + 
   theme_bw() + 
+  scale_color_brewer(palette = 'Set1') + 
   geom_segment(data = segs_p,
                aes(x = IL, xend = IR, 
                    y = WD_AVG_RATE, yend = WD_AVG_RATE, 

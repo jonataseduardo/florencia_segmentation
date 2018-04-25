@@ -1,7 +1,7 @@
 library(data.table)
 library(splitstackshape)
 library(diverdt)
-library(ggplot)
+library(ggplot2)
 
 files_path <- 
   '../data/Results-01-phased-filtered'
@@ -46,22 +46,52 @@ eur_dt <-
 
 eur_dt1 <- 
   eur_dt[eur_segs_ref, on = .(CHR, POS, SNP)
-         ][,`:=`(POSD_ID = .I, HTZ = MAF * ( 1 - MAF))]
+         ][,`:=`(POS_ID = .I, HTZ = MAF * ( 1 - MAF))]
+
+
+wd_dt <- expandRows(seg_dt, 'WD_SIZE')
+
+eur_wd <- 
+  eur_dt1[rep(1:.N, length(exponents))
+          ][, `:=`(EXP = wd_dt$EXP,
+                   IL = wd_dt$IL,
+                   IR = wd_dt$IR)]
+
+eur_wd[, HTZ_WD := mean(HTZ), by = .(IR, EXP)]
 
 recomb_data <- 
   fread('../data/genetic_map_b36/genetic_map_chr1_b36.txt',
         col.names = c('POS', 'RATE', 'CM_R'))
 
-wd_dt <- expandRows(seg_dt, 'WD_SIZE')
+reur <- recomb_data[eur_wd, on = .(POS)
+                    ][!is.na(RATE)]
 
-eur_wd <- 
-  eur_dt1[rep(1:.N, length(exponents)), 
-          `:=`(EXP = wd_dt$EXP, 
-           WD_ID = wd_dt$IR)]
+reur[,`:=`(WD_AVG_RATE = mean(RATE),
+            WD_SD_RATE = sd(RATE)),
+      by = .(EXP, IR)]
 
-eur_wd[, HTZ_WD := mean(HTZ), by = .(WD_ID, EXP)]
+reur[POS_ID == IL | POS_ID == IR , 
+     .(mean(RATE), var(RATE)), 
+     by = EXP]
 
-reur1 <- recomb_data[eur_dt1, on = .(POS)
-                     ][!is.na(RATE)]
+recomb_data[, .(mean(RATE), var(RATE))]
 
-reur1[WD_ID == POS_ID]
+seg_dt[EXP == '15']
+
+recomb_data[, POS_ID := .I]
+
+p_reur <- reur[POS_ID %in% 1000:1500]
+segs_p <- unique(p_reur[EXP %in% c('01', '05', '10', '15'), 
+                 .(IR, IL, WD_AVG_RATE, WD_SD_RATE, EXP)])
+segs_p
+ggplot(p_reur[EXP == '01']) + 
+  geom_line(aes(x=POS_ID, y = RATE)) + 
+  theme_bw() + 
+  geom_segment(data = segs_p,
+               aes(x = IL, xend = IR, 
+                   y = WD_AVG_RATE, yend = WD_AVG_RATE, 
+                   size = WD_SD_RATE,
+                   color = EXP 
+                   ),
+               alpha = 0.7
+            )

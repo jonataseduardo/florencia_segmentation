@@ -45,20 +45,21 @@ eur_dt <-
                one_allele_perline = FALSE)
 
 eur_dt1 <- 
-  eur_dt[eur_segs_ref, on = .(CHR, POS, SNP)] 
+  eur_dt[eur_segs_ref, on = .(CHR, POS, SNP)
+         ][,`:=`(POSD_ID = .I, HTZ = MAF * ( 1 - MAF))]
 
 recomb_data <- 
   fread('../data/genetic_map_b36/genetic_map_chr1_b36.txt',
         col.names = c('POS', 'RATE', 'CM_R'))
 
-recomb_data
+wd_dt <- expandRows(seg_dt, 'WD_SIZE')
 
+eur_wd <- 
+  eur_dt1[rep(1:.N, length(exponents)), 
+          `:=`(EXP = wd_dt$EXP, 
+           WD_ID = wd_dt$IR)]
 
-eur_dt1[, `:=`(POS_ID = .I, 
-               WD_ID = wd_dt$WD_ID,
-               HTZ = MAF * ( 1 - MAF))]
-
-eur_dt1[, HTZ_WD := mean(HTZ), by = WD_ID]
+eur_wd[, HTZ_WD := mean(HTZ), by = .(WD_ID, EXP)]
 
 reur1 <- recomb_data[eur_dt1, on = .(POS)
                      ][!is.na(RATE)]

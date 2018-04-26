@@ -84,8 +84,6 @@ reur[, .(mean(RATE), var(RATE)), by = EXP]
 
 reur[, .N, by = .(IR, EXP)][, .N, by = EXP]
 
-
-
 ## Plot
 p_reur <- reur[POS_ID %in% 1200:1500][EXP %in% c('05', '10', '15')]
 segs_p <- unique(p_reur[, .(IR, IL, WD_AVG_RATE, WD_SD_RATE, EXP)])
@@ -124,4 +122,14 @@ ggplot(p_reur[EXP == '05']) +
                alpha = 0.7
             )
 
+  ggsave(filename = 'wd1.png', scale = 2.5, width = 6, height = 4)
 }
+
+{
+ggplot(seg_dt) + 
+  geom_histogram(aes(x = WD_SIZE, ..density..), bins = 90, alpha = 0.7) + 
+  facet_wrap( ~ EXP) + 
+  ggsave(filename = 'hs.png')
+}
+
+

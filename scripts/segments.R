@@ -92,7 +92,14 @@ segs_p <- unique(p_reur[, .(IR, IL, WD_AVG_RATE, WD_SD_RATE, EXP)])
 ggplot(p_reur[EXP == '05']) + 
   geom_line(aes(x=POS_ID, y = RATE), size = 1.2) + 
   theme_bw() + 
-  scale_color_brewer(palette = 'Set1') + 
+  theme(legend.text = element_text(size = rel(1.2)),
+        legend.title = element_text(size = rel(1.5)),
+        axis.text = element_text(size = rel(1.2)),
+        axis.title = element_text(size = rel(1.5)),
+        ) + 
+  scale_color_brewer(palette = 'Set1', name = '-log C') + 
+  scale_size(name = 'sd(r)') + 
+  labs( x = 'position rank', y = 'recombination rate (r)') + 
   geom_segment(data = segs_p[!is.na(WD_SD_RATE)],
                aes(x = IL, xend = IR, 
                    y = WD_AVG_RATE, yend = WD_AVG_RATE, 
@@ -122,14 +129,14 @@ ggplot(p_reur[EXP == '05']) +
                alpha = 0.7
             )
 
-  ggsave(filename = 'wd1.png', scale = 2.5, width = 6, height = 4)
+  ggsave(filename = 'wd1.pdf', scale = 2.5, width = 6, height = 4)
 }
 
 {
 ggplot(seg_dt) + 
   geom_histogram(aes(x = WD_SIZE, ..density..), bins = 90, alpha = 0.7) + 
-  facet_wrap( ~ EXP) + 
+  facet_wrap( ~ EXP)  
   ggsave(filename = 'hs.png')
 }
 
-
+fwrite(seg_dt[, median(WD_SIZE), by = EXP], 'wdsize.tsv')
